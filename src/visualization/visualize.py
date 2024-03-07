@@ -1,56 +1,62 @@
-import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from scipy import stats
 
 
 def plot_graph(n_points=100):
     """
-    Plots a graph showing the relationship between novelty and quality.
+    Plots a graph showing the relationship between novelty and quality, and returns the figure
+    and axes for further customization.
 
     Parameters:
     - n_points (int): The number of points to generate on the x-axis.
 
     Returns:
     - fig (matplotlib.figure.Figure): The generated figure.
-    - ax (matplotlib.axes.Axes): The generated axes.
+    - ax (matplotlib.axes.Axes): The axes of the plot.
     """
-
-    # Create background graph
+    # Generate x values and corresponding y values for the relationships
     x = np.linspace(-6, 6, n_points)
-    y_mb = [i - 1 / i if i < 0 else np.nan for i in x]
-    y_lq = x
-    y_att = [i - 1 / i if i > 0 else np.nan for i in x]
+    y_mb = [i - 1 / i if i < 0 else np.nan for i in x]  # Must-be relationship
+    y_lq = x  # Linear quality relationship
+    y_att = [i - 1 / i if i > 0 else np.nan for i in x]  # Attractiveness relationship
+
+    # Create a DataFrame for easy plotting
     graph = pd.DataFrame({'x': x, 'must-be': y_mb, 'linear-quality': y_lq, 'attractiveness': y_att})
 
-    plt.figure(figsize=(16 / 2.54, 16 / 2.54))
-    sns.lineplot(x='x', y='must-be', data=graph, label='Must Be', color='red')
-    sns.lineplot(x='x', y='linear-quality', data=graph, label='Linear Quality', color='orange')
-    sns.lineplot(x='x', y='attractiveness', data=graph, label='Attractiveness', color='green')
+    # Create figure and axes
+    fig, ax = plt.subplots(figsize=(16 / 2.54, 16 / 2.54))  # Size in inches
 
-    plt.axhline(0, color='black')
-    plt.axvline(0, color='black')
+    # Plot data
+    sns.lineplot(x='x', y='must-be', data=graph, label='Must Be', color='red', ax=ax)
+    sns.lineplot(x='x', y='linear-quality', data=graph, label='Linear Quality', color='orange', ax=ax)
+    sns.lineplot(x='x', y='attractiveness', data=graph, label='Attractiveness', color='green', ax=ax)
 
-    plt.xlim(-6, 6)
-    plt.ylim(-6, 6)
+    # Draw x and y axes lines at 0
+    ax.axhline(0, color='black')
+    ax.axvline(0, color='black')
 
-    plt.xticks(np.arange(-6, 7, 1))
-    plt.yticks(np.arange(-6, 7, 1))
+    # Set axes limits and ticks
+    ax.set_xlim(-6, 6)
+    ax.set_ylim(-6, 6)
+    ax.set_xticks(np.arange(-6, 7, 1))
+    ax.set_yticks(np.arange(-6, 7, 1))
 
-    plt.xlabel('Novelty')
-    plt.ylabel('Quality')
-    plt.legend()
-    plt.grid(True)
+    # Label axes
+    ax.set_xlabel('Novelty')
+    ax.set_ylabel('Quality')
 
-    ax = plt.gca()
+    # Enhance grid and spines
+    ax.grid(True)
     for spine in ax.spines.values():
         spine.set_visible(True)
         spine.set_color('black')
         spine.set_linewidth(2)
 
-    return plt.gcf(), ax
+    return fig, ax
 
 
 def plot_normal(series):
@@ -94,26 +100,28 @@ def plot_results(results, legend=False):
     legend (bool, optional): Whether to display a legend. Defaults to True.
     """
 
-    plot_graph()
-    for index, row in results.iterrows():
+    _, ax = plot_graph()
+    for _, row in results.iterrows():
         quality = row['quality']
         attribute = row['attribute']
         novelty = row['novelty']
         area = row['area']
-        quarter = row['quarter']
         feature_name = row['feature_name']
         color = 'orange' if attribute == 'LQ' else 'red' if attribute == 'MB' else 'green'
         hatch = '+' if attribute == 'LQ' else '\\'
 
-        # Plot each point
-        if legend == True:
-            plt.scatter(novelty, quality, color=color,
-                        label=f'{feature_name}\nN = {novelty:.2f}\nQ = {quality:.2f}\nA = {area:.2f}')
-            plt.legend()
-        else:
-            plt.scatter(novelty, quality, color=color)
-        square = patches.Rectangle((0, 0), novelty, quality, hatch=hatch, fill=False, color=color, linewidth=0.5)
-        plt.gca().add_patch(square)
+        # Correctly plot each point using the ax object, without reassigning ax
+        label = f'{feature_name}: N={novelty:.2f}, Q={quality:.2f}, A={area:.2f}' if legend else None
+        ax.scatter(novelty, quality, color=color, label=label)
+
+        # Create a rectangle patch and add it to the ax object
+        square = patches.Rectangle((0, 0), width=novelty, height=quality,
+                                hatch=hatch, fill=False, color=color, linewidth=0.5)
+        ax.add_patch(square)
+
+    # Configure legend if needed
+    if legend:
+        ax.legend()
 
     plt.show()
 
