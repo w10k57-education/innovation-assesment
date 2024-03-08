@@ -67,61 +67,50 @@ def rescale_values(values, inversed=False):
     return rescaled
 
 
-def calculate_results(product_no, df_value, df_attr):
+def calculate_results(features, qualities, attributes):
     """
-    Calculate the results for a given product number.
+    Calculate the results based on the given features, qualities, and attributes.
 
-    Args:
-        product_no (int): The product number.
-        df_value (pandas.DataFrame): The dataframe containing the values.
-        df_attr (dict): The dictionary containing the attributes.
+    Parameters:
+    - features (list): A list of feature names.
+    - qualities (list): A list of quality values.
+    - attributes (list): A list of attribute values.
 
     Returns:
-        pandas.DataFrame: The calculated results.
+    - pandas.DataFrame: A DataFrame containing the calculated results with columns:
+        - feature_name: The feature names.
+        - attribute: The attribute values.
+        - quality: The quality values.
+        - novelty: The calculated novelty values.
+        - area: The calculated area values.
+        - quarter: The calculated quarter values.
 
     Raises:
-        TypeError: If the product number is not an integer.
-        ValueError: If the product number is out of range or a feature is not found in the attributes file.
+    - ValueError: If the number of features, qualities, and attributes is not the same.
     """
 
-    if type(product_no) != int:
-        raise TypeError('Product number must be an integer')
-    if product_no not in range(len(df_value)):
-        raise ValueError(f'Product number out of range. Please select an integer from 0 to {len(df_value)}]')
+    if len(features) != len(qualities) or len(features) != len(attributes):
+        raise ValueError("The number of features, qualities, and attributes must be the same.")
 
-    features = []
-    attributes = []
-    qualities = []
     novelties = []
     areas = []
     quarter = []
 
-    product = df_value.iloc[product_no]
+    for quality, attribute in zip(qualities, attributes):
+        novelty, area = calculate_area(quality, attribute)
+        novelties.append(novelty)
+        areas.append(area)
 
-    for col in df_value.columns:
-        feature_name = col.split('_')[0]
-        if feature_name in df_attr.keys():
-            quality = product[col]
-            attribute = df_attr[feature_name][0]
-            novelty, area = calculate_area(quality, attribute)
-            features.append(feature_name)
-            attributes.append(attribute)
-            qualities.append(round(quality, 3))
-            novelties.append(novelty)
-            areas.append(area)
-
-            if quality > 0:
-                if novelty > 0:
-                    quarter.append('Q1')
-                else:
-                    quarter.append('Q2')
+        if quality > 0:
+            if novelty > 0:
+                quarter.append('Q1')
             else:
-                if novelty > 0:
-                    quarter.append('Q4')
-                else:
-                    quarter.append('Q3')
+                quarter.append('Q2')
         else:
-            raise ValueError(f'Feature {feature_name} not found in the attributes file')
+            if novelty > 0:
+                quarter.append('Q4')
+            else:
+                quarter.append('Q3')
 
     results = {'feature_name': features, 'attribute': attributes,
                'quality': qualities, 'novelty': novelties, 'area': areas, 'quarter': quarter}
