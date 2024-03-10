@@ -56,7 +56,7 @@ def rescale_values(values, inversed=False):
     std = np.std(values)
 
     # Normalize the values to have mean 0
-    normalized_values = 2 * (values - mean) / std
+    normalized_values = (values - mean) / std
 
     # Clip values to be within the range of -6 to 6
     rescaled = np.clip(normalized_values, -6, 6)
